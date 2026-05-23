@@ -18,12 +18,12 @@ router = APIRouter()
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(payload: RegisterRequest):
     # Check for duplicate email
-    existing = supabase.table("auth_schema.users").select("id").eq("email", payload.email).execute()
+    existing = supabase.table("users").select("id").eq("email", payload.email).execute()
     if existing.data:
         raise HTTPException(status_code=409, detail="Email already registered")
 
     hashed = hash_password(payload.password)
-    new_user = supabase.table("auth_schema.users").insert({
+    new_user = supabase.table("users").insert({
         "email": payload.email,
         "full_name": payload.full_name,
         "password_hash": hashed,
@@ -44,7 +44,7 @@ async def register(payload: RegisterRequest):
 # ────────────────────────────────────────────
 @router.post("/login", response_model=TokenResponse)
 async def login(payload: LoginRequest):
-    result = supabase.table("auth_schema.users").select("*").eq("email", payload.email).execute()
+    result = supabase.table("users").select("*").eq("email", payload.email).execute()
     if not result.data:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
@@ -90,7 +90,7 @@ async def logout(current_user: dict = Depends(get_current_user)):
 # ────────────────────────────────────────────
 @router.get("/me", response_model=UserResponse)
 async def me(current_user: dict = Depends(get_current_user)):
-    result = supabase.table("auth_schema.users").select("*").eq("id", current_user["sub"]).execute()
+    result = supabase.table("users").select("*").eq("id", current_user["sub"]).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="User not found")
     u = result.data[0]
