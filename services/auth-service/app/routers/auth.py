@@ -111,3 +111,24 @@ async def list_doctors(current_user: dict = Depends(get_current_user)):
         .eq("role", "doctor") \
         .execute()
     return result.data
+
+
+# ────────────────────────────────────────────
+# PUT /auth/me  – Update current user profile
+# ────────────────────────────────────────────
+from pydantic import BaseModel
+
+class UpdateProfileRequest(BaseModel):
+    full_name: str
+
+@router.put("/me", response_model=UserResponse)
+async def update_me(payload: UpdateProfileRequest, current_user: dict = Depends(get_current_user)):
+    """Update the current user's full name."""
+    result = supabase.table("users") \
+        .update({"full_name": payload.full_name}) \
+        .eq("id", current_user["sub"]) \
+        .execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    u = result.data[0]
+    return UserResponse(id=u["id"], email=u["email"], full_name=u["full_name"], role=u["role"], gender=u.get("gender"))
