@@ -16,7 +16,7 @@ async def link_family_member(
     current_user: dict = Depends(get_current_user),
 ):
     """Link another user as a family member (e.g., 'parent', 'child', 'spouse')."""
-    result = supabase.table("family_schema.linked_accounts").insert({
+    result = supabase.table("linked_accounts").insert({
         "owner_id": current_user["sub"],
         "linked_user_id": linked_user_id,
         "relationship": relationship,
@@ -26,7 +26,7 @@ async def link_family_member(
 
 @router.get("/members")
 async def list_family_members(current_user: dict = Depends(get_current_user)):
-    result = supabase.table("family_schema.linked_accounts") \
+    result = supabase.table("linked_accounts") \
         .select("*, family_schema.family_profiles(*)") \
         .eq("owner_id", current_user["sub"]) \
         .execute()
@@ -35,7 +35,7 @@ async def list_family_members(current_user: dict = Depends(get_current_user)):
 
 @router.delete("/unlink/{linked_user_id}")
 async def unlink_family_member(linked_user_id: str, current_user: dict = Depends(get_current_user)):
-    supabase.table("family_schema.linked_accounts") \
+    supabase.table("linked_accounts") \
         .delete() \
         .eq("owner_id", current_user["sub"]) \
         .eq("linked_user_id", linked_user_id) \

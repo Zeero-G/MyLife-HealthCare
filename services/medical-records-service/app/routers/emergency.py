@@ -16,7 +16,7 @@ async def get_emergency_profile(user_id: str):
     Public endpoint – returns minimal emergency data for a patient.
     In production, protect with a scoped QR token check.
     """
-    result = supabase.table("medical_schema.emergency_profiles") \
+    result = supabase.table("emergency_profiles") \
         .select("*") \
         .eq("user_id", user_id) \
         .execute()

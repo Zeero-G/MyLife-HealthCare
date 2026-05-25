@@ -22,7 +22,7 @@ router = APIRouter()
 # ── GET /records ──────────────────────────────────────────
 @router.get("/", response_model=list[RecordResponse])
 async def list_records(current_user: dict = Depends(get_current_user)):
-    result = supabase.table("medical_schema.medical_records") \
+    result = supabase.table("medical_records") \
         .select("*") \
         .eq("user_id", current_user["sub"]) \
         .order("created_at", desc=True) \
@@ -43,7 +43,7 @@ async def create_record(payload: CreateRecordRequest, current_user: dict = Depen
         "diagnosis": payload.diagnosis,
         "file_url": payload.file_url,
     }
-    result = supabase.table("medical_schema.medical_records").insert(new_record).execute()
+    result = supabase.table("medical_records").insert(new_record).execute()
 
     # Async: notify patient via Notification Service
     try:
@@ -62,7 +62,7 @@ async def create_record(payload: CreateRecordRequest, current_user: dict = Depen
 # ── GET /records/{record_id} ──────────────────────────────
 @router.get("/{record_id}", response_model=RecordResponse)
 async def get_record(record_id: str, current_user: dict = Depends(get_current_user)):
-    result = supabase.table("medical_schema.medical_records") \
+    result = supabase.table("medical_records") \
         .select("*") \
         .eq("id", record_id) \
         .eq("user_id", current_user["sub"]) \
@@ -76,7 +76,7 @@ async def get_record(record_id: str, current_user: dict = Depends(get_current_us
 @router.put("/{record_id}", response_model=RecordResponse)
 async def update_record(record_id: str, payload: UpdateRecordRequest, current_user: dict = Depends(get_current_user)):
     update_data = {k: v for k, v in payload.model_dump().items() if v is not None}
-    result = supabase.table("medical_schema.medical_records") \
+    result = supabase.table("medical_records") \
         .update(update_data) \
         .eq("id", record_id) \
         .eq("user_id", current_user["sub"]) \
@@ -89,7 +89,7 @@ async def update_record(record_id: str, payload: UpdateRecordRequest, current_us
 # ── DELETE /records/{record_id} ───────────────────────────
 @router.delete("/{record_id}", status_code=204)
 async def delete_record(record_id: str, current_user: dict = Depends(get_current_user)):
-    supabase.table("medical_schema.medical_records") \
+    supabase.table("medical_records") \
         .delete() \
         .eq("id", record_id) \
         .eq("user_id", current_user["sub"]) \
@@ -102,7 +102,7 @@ async def share_qr(payload: ShareQRRequest, current_user: dict = Depends(get_cur
     token = str(uuid.uuid4())
     expires_at = datetime.utcnow() + timedelta(hours=payload.expires_hours)
 
-    supabase.table("medical_schema.shared_records").insert({
+    supabase.table("shared_records").insert({
         "record_id": payload.record_id,
         "token": token,
         "expires_at": expires_at.isoformat(),

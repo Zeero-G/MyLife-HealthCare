@@ -54,7 +54,7 @@ async def process_document(payload: ProcessRequest):
     """
     # Store initial record
     doc_id = str(uuid.uuid4())
-    supabase.table("ai_schema.uploaded_documents").insert({
+    supabase.table("uploaded_documents").insert({
         "id": doc_id,
         "user_id": payload.user_id,
         "file_url": payload.file_url,
@@ -79,7 +79,7 @@ async def process_document(payload: ProcessRequest):
         confidence = extracted.pop("confidence_score", 0.85)
 
         # Save to extracted_reports
-        supabase.table("ai_schema.extracted_reports").insert({
+        supabase.table("extracted_reports").insert({
             "document_id": doc_id,
             "user_id": payload.user_id,
             "extracted_data": extracted,
@@ -87,7 +87,7 @@ async def process_document(payload: ProcessRequest):
         }).execute()
 
         # Update document status
-        supabase.table("ai_schema.uploaded_documents") \
+        supabase.table("uploaded_documents") \
             .update({"status": "completed"}) \
             .eq("id", doc_id) \
             .execute()
@@ -109,7 +109,7 @@ async def process_document(payload: ProcessRequest):
         )
 
     except Exception as e:
-        supabase.table("ai_schema.uploaded_documents") \
+        supabase.table("uploaded_documents") \
             .update({"status": "failed"}) \
             .eq("id", doc_id) \
             .execute()
@@ -118,7 +118,7 @@ async def process_document(payload: ProcessRequest):
 
 @router.get("/results/{doc_id}", response_model=AIResultResponse)
 async def get_result(doc_id: str):
-    result = supabase.table("ai_schema.extracted_reports") \
+    result = supabase.table("extracted_reports") \
         .select("*") \
         .eq("document_id", doc_id) \
         .execute()
@@ -134,7 +134,7 @@ async def get_result(doc_id: str):
 @router.get("/summary")
 async def get_summary(user_id: str):
     """Returns all extraction results for a given user."""
-    result = supabase.table("ai_schema.extracted_reports") \
+    result = supabase.table("extracted_reports") \
         .select("*") \
         .eq("user_id", user_id) \
         .order("created_at", desc=True) \
