@@ -1,3 +1,6 @@
+"""
+Auth Router + Doctors listing endpoint.
+"""
 from fastapi import APIRouter, HTTPException, status, Depends
 from app.schemas.auth_schemas import (
     RegisterRequest, LoginRequest, RefreshRequest,
@@ -28,6 +31,7 @@ async def register(payload: RegisterRequest):
         "full_name": payload.full_name,
         "password_hash": hashed,
         "role": payload.role,
+        "gender": payload.gender,
     }).execute()
 
     user_id = new_user.data[0]["id"]
@@ -81,7 +85,6 @@ async def refresh(payload: RefreshRequest):
 @router.post("/logout")
 async def logout(current_user: dict = Depends(get_current_user)):
     # Stateless JWT – client discards the token.
-    # For server-side invalidation, add the JTI to a blocklist table here.
     return {"message": "Logged out successfully"}
 
 
@@ -94,4 +97,17 @@ async def me(current_user: dict = Depends(get_current_user)):
     if not result.data:
         raise HTTPException(status_code=404, detail="User not found")
     u = result.data[0]
-    return UserResponse(id=u["id"], email=u["email"], full_name=u["full_name"], role=u["role"])
+    return UserResponse(id=u["id"], email=u["email"], full_name=u["full_name"], role=u["role"], gender=u.get("gender"))
+
+
+# ────────────────────────────────────────────
+# GET /auth/doctors  – List all registered doctors (for patient to book)
+# ────────────────────────────────────────────
+@router.get("/doctors")
+async def list_doctors(current_user: dict = Depends(get_current_user)):
+    """Returns a list of all users with role='doctor' for appointment booking."""
+    result = supabase.table("users") \
+        .select("id, full_name, email, gender") \
+        .eq("role", "doctor") \
+        .execute()
+    return result.data

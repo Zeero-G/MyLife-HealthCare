@@ -18,7 +18,8 @@ CREATE TABLE auth_schema.users (
     email         TEXT UNIQUE NOT NULL,
     full_name     TEXT NOT NULL,
     password_hash TEXT NOT NULL,
-    role          TEXT NOT NULL DEFAULT 'patient' CHECK (role IN ('patient', 'doctor', 'admin')),
+    role          TEXT NOT NULL DEFAULT 'patient' CHECK (role IN ('patient', 'doctor', 'admin', 'family_member')),
+    gender        TEXT CHECK (gender IN ('male', 'female')),
     is_active     BOOLEAN DEFAULT TRUE,
     created_at    TIMESTAMPTZ DEFAULT NOW(),
     updated_at    TIMESTAMPTZ DEFAULT NOW()
@@ -73,6 +74,31 @@ CREATE TABLE medical_schema.emergency_profiles (
     emergency_contact_phone  TEXT,
     current_medications      TEXT[] DEFAULT '{}',
     updated_at               TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ════════════════════════════════════════════════════════════════
+-- APPOINTMENTS TABLE (NEW)
+-- ════════════════════════════════════════════════════════════════
+CREATE TABLE medical_schema.appointments (
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id   UUID NOT NULL,
+    doctor_id    UUID NOT NULL,
+    scheduled_at TIMESTAMPTZ NOT NULL,
+    reason       TEXT,
+    status       TEXT NOT NULL DEFAULT 'pending'
+                     CHECK (status IN ('pending','confirmed','completed','cancelled')),
+    notes        TEXT,
+    created_at   TIMESTAMPTZ DEFAULT NOW(),
+    updated_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE medical_schema.doctor_notes (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    record_id  UUID REFERENCES medical_schema.medical_records(id) ON DELETE CASCADE,
+    doctor_id  UUID NOT NULL,
+    patient_id UUID NOT NULL,
+    note       TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE medical_schema.audit_log (
@@ -182,9 +208,13 @@ CREATE TABLE notification_schema.notification_logs (
 -- ════════════════════════════════════════════════════════════════
 -- INDEXES (performance)
 -- ════════════════════════════════════════════════════════════════
-CREATE INDEX idx_medical_records_user_id ON medical_schema.medical_records(user_id);
-CREATE INDEX idx_shared_records_token    ON medical_schema.shared_records(token);
-CREATE INDEX idx_linked_accounts_owner  ON family_schema.linked_accounts(owner_id);
-CREATE INDEX idx_cycles_user_id         ON family_schema.menstrual_cycles(user_id);
-CREATE INDEX idx_extracted_user_id      ON ai_schema.extracted_reports(user_id);
-CREATE INDEX idx_notif_logs_user_id     ON notification_schema.notification_logs(user_id);
+CREATE INDEX idx_medical_records_user_id   ON medical_schema.medical_records(user_id);
+CREATE INDEX idx_shared_records_token      ON medical_schema.shared_records(token);
+CREATE INDEX idx_linked_accounts_owner     ON family_schema.linked_accounts(owner_id);
+CREATE INDEX idx_cycles_user_id            ON family_schema.menstrual_cycles(user_id);
+CREATE INDEX idx_extracted_user_id         ON ai_schema.extracted_reports(user_id);
+CREATE INDEX idx_notif_logs_user_id        ON notification_schema.notification_logs(user_id);
+-- NEW:
+CREATE INDEX idx_appointments_patient      ON medical_schema.appointments(patient_id);
+CREATE INDEX idx_appointments_doctor       ON medical_schema.appointments(doctor_id);
+CREATE INDEX idx_doctor_notes_record       ON medical_schema.doctor_notes(record_id);

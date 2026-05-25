@@ -27,7 +27,7 @@ class PregnancyRequest(BaseModel):
 
 @router.post("/cycle")
 async def log_cycle(payload: CycleRequest, current_user: dict = Depends(get_current_user)):
-    result = supabase.table("family_schema.menstrual_cycles").insert({
+    result = supabase.table("menstrual_cycles").insert({
         "user_id": current_user["sub"],
         "start_date": str(payload.start_date),
         "end_date": str(payload.end_date) if payload.end_date else None,
@@ -39,7 +39,7 @@ async def log_cycle(payload: CycleRequest, current_user: dict = Depends(get_curr
 
 @router.get("/cycle")
 async def get_cycle_history(current_user: dict = Depends(get_current_user)):
-    result = supabase.table("family_schema.menstrual_cycles") \
+    result = supabase.table("menstrual_cycles") \
         .select("*") \
         .eq("user_id", current_user["sub"]) \
         .order("start_date", desc=True) \
@@ -49,7 +49,7 @@ async def get_cycle_history(current_user: dict = Depends(get_current_user)):
 
 @router.post("/pregnancy")
 async def log_pregnancy(payload: PregnancyRequest, current_user: dict = Depends(get_current_user)):
-    result = supabase.table("family_schema.pregnancy_records").insert({
+    result = supabase.table("pregnancy_records").insert({
         "user_id": current_user["sub"],
         "lmp_date": str(payload.lmp_date),
         "due_date": str(payload.due_date) if payload.due_date else None,
@@ -60,7 +60,7 @@ async def log_pregnancy(payload: PregnancyRequest, current_user: dict = Depends(
 
 @router.get("/pregnancy")
 async def get_pregnancy_records(current_user: dict = Depends(get_current_user)):
-    result = supabase.table("family_schema.pregnancy_records") \
+    result = supabase.table("pregnancy_records") \
         .select("*") \
         .eq("user_id", current_user["sub"]) \
         .execute()

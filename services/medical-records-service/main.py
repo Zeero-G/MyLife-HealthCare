@@ -5,7 +5,7 @@ Core service: stores & manages all health records, QR sharing, emergency profile
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import records, emergency
+from app.routers import records, emergency, appointments
 from app.core.config import settings
 
 app = FastAPI(
@@ -24,6 +24,7 @@ app.add_middleware(
 
 app.include_router(records.router, prefix="/records", tags=["Records"])
 app.include_router(emergency.router, prefix="/emergency", tags=["Emergency"])
+app.include_router(appointments.router, prefix="/appointments", tags=["Appointments"])
 
 
 @app.get("/health")

@@ -12,7 +12,7 @@ import firebase_admin
 from firebase_admin import credentials, messaging
 
 from app.core.config import settings
-from app.core.database import supabase
+from app.core.database import supabase, supabase_auth
 
 router = APIRouter()
 
@@ -81,7 +81,7 @@ def send_push_notification(fcm_token: str, title: str, body: str):
 @router.post("/email")
 async def send_email_notification(payload: EmailRequest):
     # Fetch user email from DB
-    user = supabase.table("auth_schema.users").select("email, full_name").eq("id", payload.user_id).execute()
+    user = supabase_auth.table("users").select("email, full_name").eq("id", payload.user_id).execute()
     if not user.data:
         return {"error": "User not found"}
 
@@ -94,7 +94,7 @@ async def send_email_notification(payload: EmailRequest):
     await send_email_via_supabase(email, subject_template, body)
 
     # Log notification
-    supabase.table("notification_schema.notification_logs").insert({
+    supabase.table("notification_logs").insert({
         "user_id": payload.user_id,
         "channel": "email",
         "event": payload.event,
@@ -109,14 +109,14 @@ async def send_push(payload: PushRequest):
     fcm_token = payload.fcm_token
     if not fcm_token:
         # Look up FCM token from DB
-        result = supabase.table("notification_schema.notifications").select("fcm_token").eq("user_id", payload.user_id).execute()
+        result = supabase.table("notifications").select("fcm_token").eq("user_id", payload.user_id).execute()
         if result.data:
             fcm_token = result.data[0].get("fcm_token")
 
     if fcm_token:
         send_push_notification(fcm_token, payload.title, payload.body)
 
-    supabase.table("notification_schema.notification_logs").insert({
+    supabase.table("notification_logs").insert({
         "user_id": payload.user_id,
         "channel": "push",
         "event": "manual_push",
@@ -128,7 +128,7 @@ async def send_push(payload: PushRequest):
 
 @router.post("/reminder")
 async def schedule_reminder(payload: ReminderRequest):
-    supabase.table("notification_schema.notifications").insert({
+    supabase.table("notifications").insert({
         "user_id": payload.user_id,
         "reminder_type": payload.reminder_type,
         "scheduled_at": payload.scheduled_at,
