@@ -1,13 +1,13 @@
 """
 Appointments Router – Patient books doctor, doctor manages queue.
+Appointments table lives in the PUBLIC schema (always exposed by Supabase PostgREST).
 """
 
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel
-from typing import Optional, List
-from datetime import datetime
+from typing import Optional
 from app.core.security import get_current_user
-from app.core.database import supabase
+from app.core.database import supabase_public, supabase_auth
 
 router = APIRouter()
 
@@ -16,7 +16,7 @@ router = APIRouter()
 
 class AppointmentCreate(BaseModel):
     doctor_id: str
-    scheduled_at: str   # ISO datetime string
+    scheduled_at: str   # ISO datetime string e.g. "2026-05-28T10:30:00Z"
     reason: Optional[str] = None
 
 
@@ -33,11 +33,11 @@ async def book_appointment(
     current_user: dict = Depends(get_current_user),
 ):
     """Patient books an appointment with a doctor."""
-    if current_user.get("role") not in ("patient",):
+    if current_user.get("role") != "patient":
         raise HTTPException(status_code=403, detail="Only patients can book appointments")
 
-    # Verify doctor exists and has doctor role
-    doctor = supabase.table("users") \
+    # Verify doctor exists (auth_schema.users)
+    doctor = supabase_auth.table("users") \
         .select("id, full_name, email") \
         .eq("id", payload.doctor_id) \
         .eq("role", "doctor") \
@@ -45,7 +45,8 @@ async def book_appointment(
     if not doctor.data:
         raise HTTPException(status_code=404, detail="Doctor not found")
 
-    result = supabase.table("appointments").insert({
+    # Insert into public.appointments
+    result = supabase_public.table("appointments").insert({
         "patient_id": current_user["sub"],
         "doctor_id": payload.doctor_id,
         "scheduled_at": payload.scheduled_at,
@@ -63,16 +64,15 @@ async def book_appointment(
 @router.get("/mine")
 async def get_my_appointments(current_user: dict = Depends(get_current_user)):
     """Get appointments for the currently logged-in patient."""
-    result = supabase.table("appointments") \
+    result = supabase_public.table("appointments") \
         .select("*") \
         .eq("patient_id", current_user["sub"]) \
         .order("scheduled_at", desc=True) \
         .execute()
 
-    # Enrich with doctor names
     enriched = []
     for appt in result.data:
-        doctor = supabase.table("users") \
+        doctor = supabase_auth.table("users") \
             .select("full_name, email") \
             .eq("id", appt["doctor_id"]) \
             .execute()
@@ -91,16 +91,15 @@ async def get_doctor_appointments(current_user: dict = Depends(get_current_user)
     if current_user.get("role") != "doctor":
         raise HTTPException(status_code=403, detail="Only doctors can access this endpoint")
 
-    result = supabase.table("appointments") \
+    result = supabase_public.table("appointments") \
         .select("*") \
         .eq("doctor_id", current_user["sub"]) \
         .order("scheduled_at", desc=True) \
         .execute()
 
-    # Enrich with patient names
     enriched = []
     for appt in result.data:
-        patient = supabase.table("users") \
+        patient = supabase_auth.table("users") \
             .select("full_name, email, gender") \
             .eq("id", appt["patient_id"]) \
             .execute()
@@ -120,9 +119,7 @@ async def update_appointment(
     payload: AppointmentUpdate,
     current_user: dict = Depends(get_current_user),
 ):
-    """Doctor confirms/completes/cancels an appointment; patient can also cancel."""
-    # Fetch the appointment
-    appt = supabase.table("appointments") \
+    appt = supabase_public.table("appointments") \
         .select("*") \
         .eq("id", appointment_id) \
         .execute()
@@ -137,7 +134,7 @@ async def update_appointment(
         raise HTTPException(status_code=403, detail="Not authorized to modify this appointment")
 
     update_data = {k: v for k, v in payload.model_dump().items() if v is not None}
-    result = supabase.table("appointments") \
+    result = supabase_public.table("appointments") \
         .update(update_data) \
         .eq("id", appointment_id) \
         .execute()
@@ -150,8 +147,7 @@ async def cancel_appointment(
     appointment_id: str,
     current_user: dict = Depends(get_current_user),
 ):
-    """Cancel an appointment (patient or doctor)."""
-    appt = supabase.table("appointments") \
+    appt = supabase_public.table("appointments") \
         .select("patient_id, doctor_id") \
         .eq("id", appointment_id) \
         .execute()
@@ -162,4 +158,4 @@ async def cancel_appointment(
     if a["patient_id"] != current_user["sub"] and a["doctor_id"] != current_user["sub"]:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    supabase.table("appointments").delete().eq("id", appointment_id).execute()
+    supabase_public.table("appointments").delete().eq("id", appointment_id).execute()

@@ -79,14 +79,14 @@ CREATE TABLE medical_schema.emergency_profiles (
 -- ════════════════════════════════════════════════════════════════
 -- APPOINTMENTS TABLE (NEW)
 -- ════════════════════════════════════════════════════════════════
-CREATE TABLE medical_schema.appointments (
+CREATE TABLE IF NOT EXISTS public.appointments (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     patient_id   UUID NOT NULL,
     doctor_id    UUID NOT NULL,
     scheduled_at TIMESTAMPTZ NOT NULL,
     reason       TEXT,
     status       TEXT NOT NULL DEFAULT 'pending'
-                     CHECK (status IN ('pending','confirmed','completed','cancelled')),
+                     CHECK (status IN ('pending', 'confirmed', 'completed', 'cancelled')),
     notes        TEXT,
     created_at   TIMESTAMPTZ DEFAULT NOW(),
     updated_at   TIMESTAMPTZ DEFAULT NOW()
@@ -118,11 +118,11 @@ CREATE POLICY records_owner ON medical_schema.medical_records
 -- ════════════════════════════════════════════════════════════════
 -- FAMILY SCHEMA
 -- ════════════════════════════════════════════════════════════════
-CREATE TABLE family_schema.linked_accounts (
+CREATE TABLE IF NOT EXISTS public.linked_accounts (
     id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id       UUID NOT NULL,
     linked_user_id UUID NOT NULL,
-    relationship   TEXT NOT NULL,
+    relationship   TEXT NOT NULL DEFAULT 'family',
     created_at     TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE (owner_id, linked_user_id)
 );
@@ -210,11 +210,13 @@ CREATE TABLE notification_schema.notification_logs (
 -- ════════════════════════════════════════════════════════════════
 CREATE INDEX idx_medical_records_user_id   ON medical_schema.medical_records(user_id);
 CREATE INDEX idx_shared_records_token      ON medical_schema.shared_records(token);
-CREATE INDEX idx_linked_accounts_owner     ON family_schema.linked_accounts(owner_id);
+CREATE INDEX IF NOT EXISTS idx_linked_owner ON public.linked_accounts(owner_id);
+CREATE INDEX IF NOT EXISTS idx_linked_user  ON public.linked_accounts(linked_user_id);
 CREATE INDEX idx_cycles_user_id            ON family_schema.menstrual_cycles(user_id);
 CREATE INDEX idx_extracted_user_id         ON ai_schema.extracted_reports(user_id);
 CREATE INDEX idx_notif_logs_user_id        ON notification_schema.notification_logs(user_id);
 -- NEW:
-CREATE INDEX idx_appointments_patient      ON medical_schema.appointments(patient_id);
-CREATE INDEX idx_appointments_doctor       ON medical_schema.appointments(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_patient ON public.appointments(patient_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_doctor  ON public.appointments(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_status  ON public.appointments(status);
 CREATE INDEX idx_doctor_notes_record       ON medical_schema.doctor_notes(record_id);

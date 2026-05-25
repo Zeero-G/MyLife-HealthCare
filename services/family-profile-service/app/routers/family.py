@@ -1,10 +1,11 @@
 """
 Family Router – link/unlink family accounts, list members with user details.
+linked_accounts table lives in the PUBLIC schema.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
 from app.core.security import get_current_user
-from app.core.database import supabase
+from app.core.database import supabase_public, supabase_auth
 
 router = APIRouter()
 
@@ -16,8 +17,8 @@ async def link_family_member(
     current_user: dict = Depends(get_current_user),
 ):
     """Link another user as a family member (e.g., 'parent', 'child', 'spouse')."""
-    # Verify the target user exists
-    user_check = supabase.table("users") \
+    # Verify the target user exists (auth_schema.users)
+    user_check = supabase_auth.table("users") \
         .select("id, full_name, email, role, gender") \
         .eq("id", linked_user_id) \
         .execute()
@@ -28,8 +29,8 @@ async def link_family_member(
     if linked_user_id == current_user["sub"]:
         raise HTTPException(status_code=400, detail="Cannot link yourself as a family member.")
 
-    # Check if already linked
-    existing = supabase.table("linked_accounts") \
+    # Check if already linked (public.linked_accounts)
+    existing = supabase_public.table("linked_accounts") \
         .select("id") \
         .eq("owner_id", current_user["sub"]) \
         .eq("linked_user_id", linked_user_id) \
@@ -37,7 +38,7 @@ async def link_family_member(
     if existing.data:
         raise HTTPException(status_code=409, detail="This user is already linked as a family member.")
 
-    result = supabase.table("linked_accounts").insert({
+    result = supabase_public.table("linked_accounts").insert({
         "owner_id": current_user["sub"],
         "linked_user_id": linked_user_id,
         "relationship": relationship,
@@ -58,9 +59,8 @@ async def link_family_member(
 
 @router.get("/members")
 async def list_family_members(current_user: dict = Depends(get_current_user)):
-    """Returns all linked family members with their user details (name, email, gender)."""
-    # Get all linked accounts
-    links = supabase.table("linked_accounts") \
+    """Returns all linked family members with their user details."""
+    links = supabase_public.table("linked_accounts") \
         .select("*") \
         .eq("owner_id", current_user["sub"]) \
         .execute()
@@ -68,14 +68,13 @@ async def list_family_members(current_user: dict = Depends(get_current_user)):
     if not links.data:
         return []
 
-    # Fetch user details for each linked member
     enriched = []
     for link in links.data:
-        user_data = supabase.table("users") \
+        user_data = supabase_auth.table("users") \
             .select("id, full_name, email, role, gender") \
             .eq("id", link["linked_user_id"]) \
             .execute()
-        
+
         user_info = user_data.data[0] if user_data.data else {}
         enriched.append({
             "id": link.get("id"),
@@ -83,7 +82,6 @@ async def list_family_members(current_user: dict = Depends(get_current_user)):
             "linked_user_id": link["linked_user_id"],
             "relationship": link["relationship"],
             "created_at": link.get("created_at"),
-            # Enriched user details:
             "full_name": user_info.get("full_name", "Unknown"),
             "email": user_info.get("email", ""),
             "role": user_info.get("role", ""),
@@ -95,7 +93,7 @@ async def list_family_members(current_user: dict = Depends(get_current_user)):
 
 @router.delete("/unlink/{linked_user_id}")
 async def unlink_family_member(linked_user_id: str, current_user: dict = Depends(get_current_user)):
-    supabase.table("linked_accounts") \
+    supabase_public.table("linked_accounts") \
         .delete() \
         .eq("owner_id", current_user["sub"]) \
         .eq("linked_user_id", linked_user_id) \
