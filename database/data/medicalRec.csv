@@ -1,0 +1,11 @@
+user_id,title,record_type,description,doctor_name,visit_date,diagnosis,file_url
+5cd037a2-8d0f-4580-8d80-7d8867e15cb0,Blood Test Report,diagnosis,"Patient complained about dizziness and low energy levels.","Dr. Amanda Lee",2026-05-25,"Iron Deficiency Anemia","https://example.com/files/blood-test-report.pdf"
+5cd037a2-8d0f-4580-8d80-7d8867e15cb0,Cardiology Consultation,diagnosis,"Patient experienced chest discomfort during exercise.","Dr. Michael Carter",2026-05-20,"Mild Hypertension","https://example.com/files/cardiology-consultation.pdf"
+5cd037a2-8d0f-4580-8d80-7d8867e15cb0,Dental Checkup,diagnosis,"Routine dental examination and cleaning.","Dr. Sarah Wilson",2026-05-18,"Minor Cavities","https://example.com/files/dental-checkup.pdf"
+5cd037a2-8d0f-4580-8d80-7d8867e15cb0,Eye Examination,diagnosis,"Patient reported blurred vision in the evenings.","Dr. Kevin Brown",2026-05-15,"Myopia","https://example.com/files/eye-exam.pdf"
+5cd037a2-8d0f-4580-8d80-7d8867e15cb0,Orthopedic Review,diagnosis,"Patient complained about knee pain after sports activities.","Dr. Emily Davis",2026-05-12,"Ligament Strain","https://example.com/files/orthopedic-review.pdf"
+5cd037a2-8d0f-4580-8d80-7d8867e15cb0,General Health Screening,diagnosis,"Routine annual physical examination.","Dr. John Smith",2026-05-10,"Healthy","https://example.com/files/general-health-screening.pdf"
+5cd037a2-8d0f-4580-8d80-7d8867e15cb0,Neurology Appointment,diagnosis,"Frequent headaches and sensitivity to light.","Dr. Olivia Martinez",2026-05-08,"Migraine","https://example.com/files/neurology-appointment.pdf"
+5cd037a2-8d0f-4580-8d80-7d8867e15cb0,Dermatology Visit,diagnosis,"Patient reported itchy skin rash on arms.","Dr. Lisa Anderson",2026-05-06,"Eczema","https://example.com/files/dermatology-visit.pdf"
+5cd037a2-8d0f-4580-8d80-7d8867e15cb0,ENT Consultation,diagnosis,"Persistent sore throat and mild fever.","Dr. Daniel Thomas",2026-05-04,"Tonsillitis","https://example.com/files/ent-consultation.pdf"
+5cd037a2-8d0f-4580-8d80-7d8867e15cb0,Pulmonary Assessment,diagnosis,"Patient experienced shortness of breath during walking.","Dr. Rachel White",2026-05-02,"Mild Asthma","https://example.com/files/pulmonary-assessment.pdf"

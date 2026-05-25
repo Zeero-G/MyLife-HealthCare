@@ -7,7 +7,7 @@ class UserRole(str, Enum):
     PATIENT = "patient"
     DOCTOR = "doctor"
     ADMIN = "admin"
-
+    FAMILY_MEMBER = "family_member"
 
 # ── Request schemas ──
 
@@ -16,6 +16,7 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
     role: UserRole = UserRole.PATIENT
+    gender: Optional[str] = None
 
 
 class LoginRequest(BaseModel):
@@ -44,3 +45,4 @@ class UserResponse(BaseModel):
     email: str
     full_name: str
     role: UserRole
+    gender: Optional[str] = None
