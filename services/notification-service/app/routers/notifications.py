@@ -1,10 +1,11 @@
 """
 Notification Router – email and push notifications for key platform events.
-Called directly by other microservices (no JWT required for internal calls).
-Add an internal API key check for production security.
+Called directly by other microservices with an internal service key.
 """
 
-from fastapi import APIRouter
+import os
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 import httpx
@@ -13,15 +14,20 @@ from firebase_admin import credentials, messaging
 
 from app.core.config import settings
 from app.core.database import supabase, supabase_auth
+from app.core.security import require_internal_service
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_internal_service)])
 
 # Firebase Admin SDK init (only once)
+firebase_initialized = False
 try:
     firebase_admin.get_app()
+    firebase_initialized = True
 except ValueError:
-    cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
-    firebase_admin.initialize_app(cred)
+    if os.path.exists(settings.FIREBASE_CREDENTIALS_PATH):
+        cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
+        firebase_admin.initialize_app(cred)
+        firebase_initialized = True
 
 
 # ── Schemas ──────────────────────────────────────────────
@@ -69,6 +75,9 @@ async def send_email_via_supabase(to_email: str, subject: str, body: str):
 
 
 def send_push_notification(fcm_token: str, title: str, body: str):
+    if not firebase_initialized:
+        raise HTTPException(status_code=503, detail="Firebase credentials are not configured")
+
     message = messaging.Message(
         notification=messaging.Notification(title=title, body=body),
         token=fcm_token,

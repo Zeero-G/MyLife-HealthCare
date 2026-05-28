@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from app.core.security import get_current_user
-from app.core.database import supabase
+from app.core.database import supabase, supabase_auth
 
 router = APIRouter()
 
@@ -37,7 +37,7 @@ async def book_appointment(
         raise HTTPException(status_code=403, detail="Only patients can book appointments")
 
     # Verify doctor exists and has doctor role
-    doctor = supabase.table("users") \
+    doctor = supabase_auth.table("users") \
         .select("id, full_name, email") \
         .eq("id", payload.doctor_id) \
         .eq("role", "doctor") \
@@ -72,7 +72,7 @@ async def get_my_appointments(current_user: dict = Depends(get_current_user)):
     # Enrich with doctor names
     enriched = []
     for appt in result.data:
-        doctor = supabase.table("users") \
+        doctor = supabase_auth.table("users") \
             .select("full_name, email") \
             .eq("id", appt["doctor_id"]) \
             .execute()
@@ -100,7 +100,7 @@ async def get_doctor_appointments(current_user: dict = Depends(get_current_user)
     # Enrich with patient names
     enriched = []
     for appt in result.data:
-        patient = supabase.table("users") \
+        patient = supabase_auth.table("users") \
             .select("full_name, email, gender") \
             .eq("id", appt["patient_id"]) \
             .execute()

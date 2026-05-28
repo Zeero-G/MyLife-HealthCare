@@ -4,7 +4,7 @@ Family Router – link/unlink family accounts, list members with user details.
 
 from fastapi import APIRouter, Depends, HTTPException
 from app.core.security import get_current_user
-from app.core.database import supabase
+from app.core.database import supabase, supabase_auth
 
 router = APIRouter()
 
@@ -17,7 +17,7 @@ async def link_family_member(
 ):
     """Link another user as a family member (e.g., 'parent', 'child', 'spouse')."""
     # Verify the target user exists
-    user_check = supabase.table("users") \
+    user_check = supabase_auth.table("users") \
         .select("id, full_name, email, role, gender") \
         .eq("id", linked_user_id) \
         .execute()
@@ -71,7 +71,7 @@ async def list_family_members(current_user: dict = Depends(get_current_user)):
     # Fetch user details for each linked member
     enriched = []
     for link in links.data:
-        user_data = supabase.table("users") \
+        user_data = supabase_auth.table("users") \
             .select("id, full_name, email, role, gender") \
             .eq("id", link["linked_user_id"]) \
             .execute()

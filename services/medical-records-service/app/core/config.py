@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     AUTH_SERVICE_URL: str = os.getenv("AUTH_SERVICE_URL", "http://localhost:8001")
     NOTIFICATION_SERVICE_URL: str = os.getenv("NOTIFICATION_SERVICE_URL", "http://localhost:8005")
     AI_SERVICE_URL: str = os.getenv("AI_SERVICE_URL", "http://localhost:8004")
+    INTERNAL_SERVICE_KEY: str = os.getenv("INTERNAL_SERVICE_KEY", "")
 
     # Supabase storage bucket
     STORAGE_BUCKET: str = "medical-docs"

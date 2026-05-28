@@ -12,8 +12,8 @@ from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, status
 import httpx
 
 from app.core.config import settings
-from app.core.security import get_current_user
-from app.core.database import supabase
+from app.core.security import get_current_user, oauth2_scheme
+from app.core.database import supabase, supabase_family
 from app.schemas.records_schemas import (
     CreateRecordRequest, UpdateRecordRequest, ShareQRRequest,
     RecordResponse, ShareQRResponse,
@@ -61,7 +61,11 @@ async def share_qr(payload: ShareQRRequest, current_user: dict = Depends(get_cur
 
 # ── POST /records/upload ──────────────────────────────────── (BEFORE /{record_id})
 @router.post("/upload")
-async def upload_document(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+async def upload_document(
+    file: UploadFile = File(...),
+    token: str = Depends(oauth2_scheme),
+    current_user: dict = Depends(get_current_user),
+):
     """Upload a PDF/image to Supabase Storage and trigger AI processing."""
     file_bytes = await file.read()
     file_path = f"{current_user['sub']}/{uuid.uuid4()}_{file.filename}"
@@ -72,10 +76,15 @@ async def upload_document(file: UploadFile = File(...), current_user: dict = Dep
 
     # Trigger AI service for extraction
     try:
+        headers = {"Authorization": f"Bearer {token}"}
+        if settings.INTERNAL_SERVICE_KEY:
+            headers["X-Internal-Service-Key"] = settings.INTERNAL_SERVICE_KEY
+
         async with httpx.AsyncClient() as client:
             await client.post(
                 f"{settings.AI_SERVICE_URL}/ai/process",
                 json={"user_id": current_user["sub"], "file_url": public_url},
+                headers=headers,
                 timeout=10,
             )
     except Exception:
@@ -88,7 +97,7 @@ async def upload_document(file: UploadFile = File(...), current_user: dict = Dep
 @router.get("/family/{patient_id}", response_model=list[RecordResponse])
 async def list_family_records(patient_id: str, current_user: dict = Depends(get_current_user)):
     # 1. Verify that current_user is linked as a family member to patient_id
-    link_check = supabase.table("linked_accounts") \
+    link_check = supabase_family.table("linked_accounts") \
         .select("*") \
         .eq("owner_id", current_user["sub"]) \
         .eq("linked_user_id", patient_id) \
@@ -127,6 +136,7 @@ async def create_record(payload: CreateRecordRequest, current_user: dict = Depen
             await client.post(
                 f"{settings.NOTIFICATION_SERVICE_URL}/notify/email",
                 json={"user_id": current_user["sub"], "event": "record_created", "record_title": payload.title},
+                headers={"X-Internal-Service-Key": settings.INTERNAL_SERVICE_KEY},
                 timeout=5,
             )
     except Exception:

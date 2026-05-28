@@ -23,15 +23,24 @@ class EmergencyProfileUpsert(BaseModel):
     current_medications: Optional[List[str]] = None
 
 
+class EmergencyPublicProfileResponse(BaseModel):
+    user_id: str
+    blood_type: Optional[str]
+    allergies: List[str]
+    chronic_conditions: List[str]
+    current_medications: List[str]
+
+
 # ── GET /emergency/profile/{user_id} ─────────────────────────
-@router.get("/profile/{user_id}", response_model=EmergencyProfileResponse)
+@router.get("/profile/{user_id}", response_model=EmergencyPublicProfileResponse)
 async def get_emergency_profile(user_id: str):
     """
-    Public endpoint – returns minimal emergency data for a patient.
+    Public endpoint – returns reduced emergency data for a patient.
     Used by emergency responders via QR code scan.
     """
+    # TODO: Replace raw user_id access with a random, expiring QR token before exposing contact details.
     result = supabase.table("emergency_profiles") \
-        .select("*") \
+        .select("user_id, blood_type, allergies, chronic_conditions, current_medications") \
         .eq("user_id", user_id) \
         .execute()
     if not result.data:

@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", "")
     CLAUDE_API_KEY: str = os.getenv("CLAUDE_API_KEY", "")
+    JWT_SECRET: str = os.getenv("JWT_SECRET", "change-me-in-production")
+    JWT_ALGORITHM: str = "HS256"
+    INTERNAL_SERVICE_KEY: str = os.getenv("INTERNAL_SERVICE_KEY", "")
     NOTIFICATION_SERVICE_URL: str = os.getenv("NOTIFICATION_SERVICE_URL", "http://localhost:8005")
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "https://mylife.vercel.app"]
 

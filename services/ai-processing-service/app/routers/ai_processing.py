@@ -11,6 +11,7 @@ import httpx
 
 from app.core.config import settings
 from app.core.database import supabase
+from app.core.security import require_user_or_internal
 
 router = APIRouter()
 
@@ -47,11 +48,17 @@ Provide a confidence_score (0.0-1.0) based on document clarity.
 
 
 @router.post("/process", response_model=AIResultResponse, status_code=202)
-async def process_document(payload: ProcessRequest):
+async def process_document(
+    payload: ProcessRequest,
+    actor: dict = Depends(require_user_or_internal),
+):
     """
     Accepts a medical document URL, sends it to Claude API for extraction,
     stores the result, and notifies the patient.
     """
+    if actor.get("auth_type") == "user" and actor.get("sub") != payload.user_id:
+        raise HTTPException(status_code=403, detail="Cannot process documents for another user")
+
     # Store initial record
     doc_id = str(uuid.uuid4())
     supabase.table("uploaded_documents").insert({
@@ -98,6 +105,7 @@ async def process_document(payload: ProcessRequest):
                 await http.post(
                     f"{settings.NOTIFICATION_SERVICE_URL}/notify/email",
                     json={"user_id": payload.user_id, "event": "ai_extraction_complete"},
+                    headers={"X-Internal-Service-Key": settings.INTERNAL_SERVICE_KEY},
                     timeout=5,
                 )
         except Exception:
