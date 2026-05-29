@@ -1,0 +1,44 @@
+name: CI/CD Pipeline - Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: SSH into EC2 & Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            # 1. Ensure target directory exists, otherwise clone
+            if [ ! -d "/home/${{ secrets.EC2_USER }}/MyLife-HealthCare-Backend" ]; then
+              echo "Cloning repository..."
+              git clone https://github.com/Zeero-G/MyLife-HealthCare-Backend.git "/home/${{ secrets.EC2_USER }}/MyLife-HealthCare-Backend"
+            fi
+
+            # 2. Navigate to project root
+            cd "/home/${{ secrets.EC2_USER }}/MyLife-HealthCare-Backend"
+
+            # 3. Pull latest code from main
+            echo "Pulling latest code changes..."
+            git pull origin main
+
+            # 4. Stop and rebuild containers with Compose
+            echo "Rebuilding and starting docker containers..."
+            docker-compose down
+            docker-compose up --build -d
+
+            # 5. Clean up unused images/containers to prevent disk bloat
+            echo "Cleaning up dangling docker objects..."
+            docker image prune -f
