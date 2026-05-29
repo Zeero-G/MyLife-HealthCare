@@ -98,5 +98,4 @@ For the MVP, we favor simplicity over complex orchestration:
 We welcome contributions! Please check our [Issues](issues) board or open a pull request to submit bugs or suggest new features. Ensure you follow our code style guidelines for both Python (pep8/black) and TypeScript (Prettier/ESLint).
 
 ## 📄 License
-
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
