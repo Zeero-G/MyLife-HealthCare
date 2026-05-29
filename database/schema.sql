@@ -65,15 +65,24 @@ CREATE TABLE medical_schema.shared_records (
 );
 
 CREATE TABLE medical_schema.emergency_profiles (
-    id                       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id                  UUID UNIQUE NOT NULL,
-    blood_type               TEXT,
-    allergies                TEXT[] DEFAULT '{}',
-    chronic_conditions       TEXT[] DEFAULT '{}',
-    emergency_contact_name   TEXT,
-    emergency_contact_phone  TEXT,
-    current_medications      TEXT[] DEFAULT '{}',
-    updated_at               TIMESTAMPTZ DEFAULT NOW()
+    id                               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id                          UUID UNIQUE NOT NULL,
+    blood_type                       TEXT,
+    allergies                        TEXT[] DEFAULT '{}',
+    chronic_conditions               TEXT[] DEFAULT '{}',
+    emergency_contact_name           TEXT,
+    emergency_contact_phone          TEXT,
+    emergency_contacts               JSONB DEFAULT '[]'::jsonb,
+    allergies_status                 TEXT NOT NULL DEFAULT 'unknown'
+        CHECK (allergies_status IN ('unknown', 'none', 'has_items')),
+    conditions_status                TEXT NOT NULL DEFAULT 'unknown'
+        CHECK (conditions_status IN ('unknown', 'none', 'has_items')),
+    medications_status               TEXT NOT NULL DEFAULT 'unknown'
+        CHECK (medications_status IN ('unknown', 'none', 'has_items')),
+    last_confirmed_at                TIMESTAMPTZ,
+    show_emergency_contacts_publicly BOOLEAN NOT NULL DEFAULT FALSE,
+    current_medications              TEXT[] DEFAULT '{}',
+    updated_at                       TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE medical_schema.emergency_access_tokens (
