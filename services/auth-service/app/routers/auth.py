@@ -4,13 +4,14 @@ Auth Router + Doctors listing endpoint.
 from fastapi import APIRouter, HTTPException, status, Depends
 from app.schemas.auth_schemas import (
     RegisterRequest, LoginRequest, RefreshRequest,
-    PasswordResetRequest, TokenResponse, UserResponse,
+    PasswordResetRequest, TokenResponse, UserResponse, UserRole,
 )
 from app.core.security import (
     hash_password, verify_password,
     create_access_token, create_refresh_token, decode_token, get_current_user,
 )
 from app.core.database import supabase
+from app.core.audit import write_audit
 
 router = APIRouter()
 
@@ -20,7 +21,15 @@ router = APIRouter()
 # ────────────────────────────────────────────
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(payload: RegisterRequest):
-    # Check for duplicate email
+    # TODO: Doctor onboarding — verified credential workflow before role=doctor accounts.
+    if payload.role != UserRole.PATIENT:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only patient accounts can self-register. Doctor verification is required for clinical roles.",
+        )
+
+    role = UserRole.PATIENT.value
+
     existing = supabase.table("users").select("id").eq("email", payload.email).execute()
     if existing.data:
         raise HTTPException(status_code=409, detail="Email already registered")
@@ -30,12 +39,12 @@ async def register(payload: RegisterRequest):
         "email": payload.email,
         "full_name": payload.full_name,
         "password_hash": hashed,
-        "role": payload.role,
+        "role": role,
         "gender": payload.gender,
     }).execute()
 
     user_id = new_user.data[0]["id"]
-    token_data = {"sub": user_id, "email": payload.email, "role": payload.role}
+    token_data = {"sub": user_id, "email": payload.email, "role": role}
 
     return TokenResponse(
         access_token=create_access_token(token_data),
@@ -57,6 +66,7 @@ async def login(payload: LoginRequest):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     token_data = {"sub": user["id"], "email": user["email"], "role": user["role"]}
+    write_audit(user["id"], "login", "users", user["id"])
     return TokenResponse(
         access_token=create_access_token(token_data),
         refresh_token=create_refresh_token(token_data),

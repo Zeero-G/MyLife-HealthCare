@@ -38,3 +38,24 @@ def require_user_or_internal(
         detail="Authentication required",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+) -> dict:
+    """Require a valid user access JWT (not internal service key)."""
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            settings.JWT_SECRET,
+            algorithms=[settings.JWT_ALGORITHM],
+        )
+        if payload.get("type") != "access":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        return payload
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )

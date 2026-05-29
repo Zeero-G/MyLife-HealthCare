@@ -3,7 +3,14 @@ from app.core.config import settings
 
 # Supabase client (service-role key bypasses RLS – use only in backend)
 supabase: Client = create_client(
-    settings.SUPABASE_URL, 
+    settings.SUPABASE_URL,
     settings.SUPABASE_SERVICE_KEY,
-    options=ClientOptions(schema="auth_schema")
+    options=ClientOptions(schema="auth_schema"),
+)
+
+# Audit log lives in medical_schema
+supabase_audit: Client = create_client(
+    settings.SUPABASE_URL,
+    settings.SUPABASE_SERVICE_KEY,
+    options=ClientOptions(schema="medical_schema"),
 )

@@ -76,6 +76,15 @@ CREATE TABLE medical_schema.emergency_profiles (
     updated_at               TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE medical_schema.emergency_access_tokens (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id    UUID NOT NULL,
+    token      TEXT UNIQUE NOT NULL,
+    expires_at TIMESTAMPTZ,
+    revoked_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ════════════════════════════════════════════════════════════════
 -- APPOINTMENTS TABLE (NEW)
 -- ════════════════════════════════════════════════════════════════
@@ -210,6 +219,7 @@ CREATE TABLE notification_schema.notification_logs (
 -- ════════════════════════════════════════════════════════════════
 CREATE INDEX idx_medical_records_user_id   ON medical_schema.medical_records(user_id);
 CREATE INDEX idx_shared_records_token      ON medical_schema.shared_records(token);
+CREATE INDEX idx_emergency_access_token    ON medical_schema.emergency_access_tokens(token);
 CREATE INDEX idx_linked_accounts_owner     ON family_schema.linked_accounts(owner_id);
 CREATE INDEX idx_cycles_user_id            ON family_schema.menstrual_cycles(user_id);
 CREATE INDEX idx_extracted_user_id         ON ai_schema.extracted_reports(user_id);

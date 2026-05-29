@@ -23,8 +23,11 @@ class Settings(BaseSettings):
     AI_SERVICE_URL: str = os.getenv("AI_SERVICE_URL", "http://localhost:8004")
     INTERNAL_SERVICE_KEY: str = os.getenv("INTERNAL_SERVICE_KEY", "")
 
-    # Supabase storage bucket
+    # Supabase storage bucket (must be private — access via signed URLs only)
     STORAGE_BUCKET: str = "medical-docs"
+    STORAGE_SIGNED_URL_SECONDS: int = 300
+    STORAGE_AI_SIGNED_URL_SECONDS: int = 3600
+    EMERGENCY_TOKEN_EXPIRE_DAYS: int = 365
 
     class Config:
         env_file = ".env"
