@@ -1,0 +1,97 @@
+services:
+  # 1. Notification Service (Private)
+  - type: private
+    name: notification-service
+    env: docker
+    dockerContext: services/notification-service
+    dockerfilePath: services/notification-service/Dockerfile
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: FIREBASE_CREDENTIALS_PATH
+        value: firebase-credentials.json
+
+  # 2. AI Processing Service (Private)
+  - type: private
+    name: ai-processing-service
+    env: docker
+    dockerContext: services/ai-processing-service
+    dockerfilePath: services/ai-processing-service/Dockerfile
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: CLAUDE_API_KEY
+        sync: false
+      - key: NOTIFICATION_SERVICE_URL
+        value: http://notification-service:8005
+
+  # 3. Family Profile Service (Private)
+  - type: private
+    name: family-profile-service
+    env: docker
+    dockerContext: services/family-profile-service
+    dockerfilePath: services/family-profile-service/Dockerfile
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: AUTH_SERVICE_URL
+        value: http://auth-service:8001
+
+  # 4. Auth Service (Private)
+  - type: private
+    name: auth-service
+    env: docker
+    dockerContext: services/auth-service
+    dockerfilePath: services/auth-service/Dockerfile
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: NOTIFICATION_SERVICE_URL
+        value: http://notification-service:8005
+
+  # 5. Medical Records Service (Private)
+  - type: private
+    name: medical-records-service
+    env: docker
+    dockerContext: services/medical-records-service
+    dockerfilePath: services/medical-records-service/Dockerfile
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: AUTH_SERVICE_URL
+        value: http://auth-service:8001
+      - key: NOTIFICATION_SERVICE_URL
+        value: http://notification-service:8005
+      - key: AI_SERVICE_URL
+        value: http://ai-processing-service:8004
+
+  # 6. NGINX API Gateway (Public Web Service)
+  - type: web
+    name: mylife-gateway
+    env: docker
+    dockerContext: gateway
+    dockerfilePath: gateway/Dockerfile
+    port: 80
+    envVars:
+      - key: PORT
+        value: 80
