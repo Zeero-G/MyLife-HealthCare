@@ -1,23 +1,21 @@
 version: "3.9"
 
 # ──────────────────────────────────────────────────────────────────────────────
-# MYLIFE – Docker Compose
-# Runs all 5 microservices + NGINX API Gateway
-# Usage: docker-compose up --build -d
+# MYLIFE – Local Development Override
+# Uses plain HTTP (no SSL) so you can run the full stack locally without certs
+# Usage: docker-compose -f docker-compose.local.yml up --build -d
 # ──────────────────────────────────────────────────────────────────────────────
 
 services:
 
-  # ── NGINX API Gateway ──────────────────────────────────────────────────────
+  # ── NGINX API Gateway (LOCAL: HTTP only, no SSL) ───────────────────────────
   nginx:
     image: nginx:alpine
     container_name: mylife-gateway
     ports:
-      - "80:80"
-      - "443:443"
+      - "80:80"           # HTTP only — no 443
     volumes:
-      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./certs:/etc/nginx/certs:ro
+      - ./gateway/nginx.local.conf:/etc/nginx/nginx.conf:ro   # No certs needed
     depends_on:
       - auth-service
       - medical-records-service
@@ -43,11 +41,6 @@ services:
     networks:
       - mylife-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # ── 2. Medical Records Service (8002) ──────────────────────────────────────
   medical-records-service:
@@ -66,11 +59,6 @@ services:
     networks:
       - mylife-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # ── 3. Family & Profile Service (8003) ────────────────────────────────────
   family-profile-service:
@@ -87,11 +75,6 @@ services:
     networks:
       - mylife-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # ── 4. AI Processing Service (8004) ───────────────────────────────────────
   ai-processing-service:
@@ -108,11 +91,6 @@ services:
     networks:
       - mylife-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # ── 5. Notification Service (8005) ────────────────────────────────────────
   notification-service:
@@ -127,11 +105,6 @@ services:
     networks:
       - mylife-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
 # ── Shared network ────────────────────────────────────────────────────────────
 networks:
